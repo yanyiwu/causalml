@@ -6,6 +6,8 @@ from scipy.stats import norm
 import sklearn
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.neural_network import MLPRegressor
+from rich.console import Console
+console = Console()
 
 if version.parse(sklearn.__version__) >= version.parse("0.22.0"):
     from sklearn.utils._testing import ignore_warnings
@@ -84,14 +86,18 @@ class BaseTLearner(BaseLearner):
         self.t_groups.sort()
         self._classes = {group: i for i, group in enumerate(self.t_groups)}
         self.models_c = {group: deepcopy(self.model_c) for group in self.t_groups}
+        console.log(self.models_c)
         self.models_t = {group: deepcopy(self.model_t) for group in self.t_groups}
+        console.log(self.models_t)
 
         for group in self.t_groups:
             mask = (treatment == group) | (treatment == self.control_name)
+            console.log(mask)
             treatment_filt = treatment[mask]
             X_filt = X[mask]
             y_filt = y[mask]
             w = (treatment_filt == group).astype(int)
+            console.log(w)
 
             self.models_c[group].fit(X_filt[w == 0], y_filt[w == 0])
             self.models_t[group].fit(X_filt[w == 1], y_filt[w == 1])

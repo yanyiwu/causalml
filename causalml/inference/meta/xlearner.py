@@ -3,6 +3,8 @@ import logging
 import numpy as np
 from tqdm import tqdm
 from scipy.stats import norm
+from rich.console import Console
+console = Console()
 
 from causalml.inference.meta.base import BaseLearner
 from causalml.inference.meta.utils import (

@@ -10,6 +10,9 @@ from causalml.inference.meta.base import BaseLearner
 from causalml.inference.meta.utils import check_treatment_vector, convert_pd_to_np
 from causalml.metrics import regression_metrics, classification_metrics
 
+from rich.console import Console
+console = Console()
+
 
 logger = logging.getLogger("causalml")
 
@@ -82,12 +85,22 @@ class BaseSLearner(BaseLearner):
 
         for group in self.t_groups:
             mask = (treatment == group) | (treatment == self.control_name)
+            console.log(f'xxx {group} {self.control_name} {mask}')
+            console.log(mask.shape, treatment.shape)
             treatment_filt = treatment[mask]
             X_filt = X[mask]
             y_filt = y[mask]
+            console.log(treatment_filt.shape)
+            console.log(X_filt.shape)
+            console.log(y_filt.shape)
 
             w = (treatment_filt == group).astype(int)
-            X_new = np.hstack((w.reshape((-1, 1)), X_filt))
+            console.log(w)
+            console.log(w.shape)
+            w = w.reshape((-1, 1))
+            console.log(w.shape)
+            X_new = np.hstack((w, X_filt))
+            console.log(X_new.shape)
             self.models[group].fit(X_new, y_filt)
 
     def predict(
@@ -108,17 +121,25 @@ class BaseSLearner(BaseLearner):
         yhat_ts = {}
 
         for group in self.t_groups:
+            console.log(group)
+            console.log(X.shape)
+            #console.log(y.shape)
             model = self.models[group]
 
             # set the treatment column to zero (the control group)
             X_new = np.hstack((np.zeros((X.shape[0], 1)), X))
+            console.log(X_new.shape)
             yhat_cs[group] = model.predict(X_new)
+            console.log(yhat_cs[group].shape)
+            console.log(yhat_cs[group])
 
             # set the treatment column to one (the treatment group)
             X_new[:, 0] = 1
             yhat_ts[group] = model.predict(X_new)
+            console.log(yhat_ts[group])
 
             if (y is not None) and (treatment is not None) and verbose:
+                console.log('===')
                 mask = (treatment == group) | (treatment == self.control_name)
                 treatment_filt = treatment[mask]
                 w = (treatment_filt == group).astype(int)
@@ -132,12 +153,19 @@ class BaseSLearner(BaseLearner):
                 regression_metrics(y_filt, yhat, w)
 
         te = np.zeros((X.shape[0], self.t_groups.shape[0]))
+        console.log(te.shape)
+        console.log(te)
         for i, group in enumerate(self.t_groups):
             te[:, i] = yhat_ts[group] - yhat_cs[group]
+        console.log(te.shape)
+        console.log(te)
 
+        input()
         if not return_components:
+            console.log('===')
             return te
         else:
+            console.log('===')
             return te, yhat_cs, yhat_ts
 
     def fit_predict(
