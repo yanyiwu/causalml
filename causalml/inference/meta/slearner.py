@@ -160,7 +160,6 @@ class BaseSLearner(BaseLearner):
         console.log(te.shape)
         console.log(te)
 
-        input()
         if not return_components:
             console.log('===')
             return te
