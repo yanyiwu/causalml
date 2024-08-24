@@ -2,6 +2,8 @@ from abc import ABCMeta, abstractclassmethod
 import logging
 import numpy as np
 import pandas as pd
+from rich.console import Console
+console = Console()
 
 from causalml.inference.meta.explainer import Explainer
 from causalml.inference.meta.utils import check_p_conditions, convert_pd_to_np
@@ -105,6 +107,9 @@ class BaseLearner(metaclass=ABCMeta):
         logger.info("Generating propensity score")
         p = dict()
         p_model = dict()
+        console.log(X)
+        console.log(treatment)
+        console.log(y)
         for group in self.t_groups:
             mask = (treatment == group) | (treatment == self.control_name)
             treatment_filt = treatment[mask]
@@ -112,6 +117,11 @@ class BaseLearner(metaclass=ABCMeta):
             w_filt = (treatment_filt == group).astype(int)
             w = (treatment == group).astype(int)
             propensity_model = self.model_p if hasattr(self, "model_p") else None
+            console.log(propensity_model)
+            console.log(X_filt)
+            console.log(w_filt)
+            console.log(X)
+            console.log(w)
             p[group], p_model[group] = compute_propensity_score(
                 X=X_filt,
                 treatment=w_filt,
@@ -119,6 +129,8 @@ class BaseLearner(metaclass=ABCMeta):
                 X_pred=X,
                 treatment_pred=w,
             )
+        console.log(p)
+        console.log(p_model)
         self.propensity_model = p_model
         self.propensity = p
 

@@ -108,22 +108,28 @@ class BaseXLearner(BaseLearner):
         check_treatment_vector(treatment, self.control_name)
         self.t_groups = np.unique(treatment[treatment != self.control_name])
         self.t_groups.sort()
+        console.log(self.t_groups)
 
         if p is None:
             self._set_propensity_models(X=X, treatment=treatment, y=y)
             p = self.propensity
+            console.log(p)
         else:
             p = self._format_p(p, self.t_groups)
 
         self._classes = {group: i for i, group in enumerate(self.t_groups)}
         self.models_mu_c = {group: deepcopy(self.model_mu_c) for group in self.t_groups}
         self.models_mu_t = {group: deepcopy(self.model_mu_t) for group in self.t_groups}
+        console.log(self.models_mu_c)
+        console.log(self.models_mu_t)
         self.models_tau_c = {
             group: deepcopy(self.model_tau_c) for group in self.t_groups
         }
         self.models_tau_t = {
             group: deepcopy(self.model_tau_t) for group in self.t_groups
         }
+        console.log(self.models_tau_c)
+        console.log(self.models_tau_t)
         self.vars_c = {}
         self.vars_t = {}
 
@@ -134,14 +140,21 @@ class BaseXLearner(BaseLearner):
             y_filt = y[mask]
             w = (treatment_filt == group).astype(int)
 
+            console.log(X_filt.shape)
+            console.log(X_filt[w==0].shape)
             # Train outcome models
             self.models_mu_c[group].fit(X_filt[w == 0], y_filt[w == 0])
             self.models_mu_t[group].fit(X_filt[w == 1], y_filt[w == 1])
 
             # Calculate variances and treatment effects
+            tmp = (
+                y_filt[w == 0] - self.models_mu_c[group].predict(X_filt[w == 0])
+            )
+            console.log(type(tmp))
             var_c = (
                 y_filt[w == 0] - self.models_mu_c[group].predict(X_filt[w == 0])
             ).var()
+            console.log(var_c)
             self.vars_c[group] = var_c
             var_t = (
                 y_filt[w == 1] - self.models_mu_t[group].predict(X_filt[w == 1])
@@ -150,8 +163,12 @@ class BaseXLearner(BaseLearner):
 
             # Train treatment models
             d_c = self.models_mu_t[group].predict(X_filt[w == 0]) - y_filt[w == 0]
-            d_t = y_filt[w == 1] - self.models_mu_c[group].predict(X_filt[w == 1])
+            console.log(d_c.shape, d_c)
+            console.log(y_filt[w==0].shape, y_filt[w==0])
             self.models_tau_c[group].fit(X_filt[w == 0], d_c)
+
+            d_t = y_filt[w == 1] - self.models_mu_c[group].predict(X_filt[w == 1])
+            console.log(d_t.shape, d_t)
             self.models_tau_t[group].fit(X_filt[w == 1], d_t)
 
     def predict(
@@ -179,10 +196,12 @@ class BaseXLearner(BaseLearner):
             for group in self.t_groups:
                 p_model = self.propensity_model[group]
                 p[group] = p_model.predict(X)
+            console.log(p)
         else:
             p = self._format_p(p, self.t_groups)
 
         te = np.zeros((X.shape[0], self.t_groups.shape[0]))
+        console.log(te.shape)
         dhat_cs = {}
         dhat_ts = {}
 
@@ -195,7 +214,9 @@ class BaseXLearner(BaseLearner):
             _te = (p[group] * dhat_cs[group] + (1 - p[group]) * dhat_ts[group]).reshape(
                 -1, 1
             )
+            console.log(_te.shape)
             te[:, i] = np.ravel(_te)
+            console.log(te.shape, te)
 
             if (y is not None) and (treatment is not None) and verbose:
                 mask = (treatment == group) | (treatment == self.control_name)
@@ -212,6 +233,7 @@ class BaseXLearner(BaseLearner):
                 regression_metrics(y_filt, yhat, w)
 
         if not return_components:
+            console.log(te.shape, te)
             return te
         else:
             return te, dhat_cs, dhat_ts

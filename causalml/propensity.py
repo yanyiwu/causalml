@@ -6,7 +6,8 @@ from sklearn.metrics import roc_auc_score as auc
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.model_selection import StratifiedKFold, train_test_split
 import xgboost as xgb
-
+from rich.console import Console
+console = Console()
 
 logger = logging.getLogger("causalml")
 
@@ -188,6 +189,8 @@ def calibrate(ps, treatment):
         (numpy.array): a calibrated propensity score vector
     """
 
+    console.log(ps)
+    console.log(treatment)
     gam = LogisticGAM(s(0)).fit(ps, treatment)
 
     return gam.predict_proba(ps)
@@ -216,6 +219,7 @@ def compute_propensity_score(
         treatment_pred = treatment.copy()
     if p_model is None:
         p_model = ElasticNetPropensityModel()
+    console.log(p_model)
 
     p_model.fit(X, treatment)
 
@@ -223,14 +227,23 @@ def compute_propensity_score(
         p = p_model.predict(X)
     else:
         p = p_model.predict(X_pred)
+    console.log(X)
+    console.log(treatment)
+    console.log(treatment_pred)
+    console.log(p)
 
     if calibrate_p:
         logger.info("Calibrating propensity scores.")
+        console.log(p)
+        console.log(treatment_pred)
         p = calibrate(p, treatment_pred)
+        console.log(p)
 
     # force the p values within the range
     eps = np.finfo(float).eps
     p = np.where(p < 0 + eps, 0 + eps * 1.001, p)
     p = np.where(p > 1 - eps, 1 - eps * 1.001, p)
+    console.log(p)
+    console.log(p_model)
 
     return p, p_model
