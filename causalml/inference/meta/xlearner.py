@@ -196,7 +196,7 @@ class BaseXLearner(BaseLearner):
             for group in self.t_groups:
                 p_model = self.propensity_model[group]
                 p[group] = p_model.predict(X)
-            console.log(p)
+                console.log(p[group].shape)
         else:
             p = self._format_p(p, self.t_groups)
 
@@ -216,7 +216,7 @@ class BaseXLearner(BaseLearner):
             )
             console.log(_te.shape)
             te[:, i] = np.ravel(_te)
-            console.log(te.shape, te)
+            console.log(te.shape)
 
             if (y is not None) and (treatment is not None) and verbose:
                 mask = (treatment == group) | (treatment == self.control_name)
@@ -233,7 +233,7 @@ class BaseXLearner(BaseLearner):
                 regression_metrics(y_filt, yhat, w)
 
         if not return_components:
-            console.log(te.shape, te)
+            console.log(te.shape)
             return te
         else:
             return te, dhat_cs, dhat_ts

@@ -376,10 +376,14 @@ class BaseSClassifier(BaseSLearner):
 
             # set the treatment column to zero (the control group)
             X_new = np.hstack((np.zeros((X.shape[0], 1)), X))
+
+            ## predict_proba diff from regressor;
             yhat_cs[group] = model.predict_proba(X_new)[:, 1]
 
             # set the treatment column to one (the treatment group)
             X_new[:, 0] = 1
+
+            ## predict_proba diff from regressor;
             yhat_ts[group] = model.predict_proba(X_new)[:, 1]
 
             if y is not None and (treatment is not None) and verbose:

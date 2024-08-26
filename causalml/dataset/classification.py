@@ -6,6 +6,8 @@ from scipy.interpolate import UnivariateSpline
 from scipy.optimize import fsolve
 from scipy.special import expit, logit
 
+from rich.console import Console
+console = Console()
 
 # ------ Define a list of functions for feature transformation
 # @staticmethod
@@ -570,6 +572,7 @@ def make_uplift_classification(
         treatment_list += [ti] * n_samples
     treatment_list = np.random.permutation(treatment_list)
     df_res["treatment_group_key"] = treatment_list
+    console.log(df_res)
 
     # generate features and labels
     X1, Y1 = make_classification(
@@ -599,6 +602,7 @@ def make_uplift_classification(
         df_res[x_name_i] = X1[
             :, n_classification_informative + n_classification_redundant + xi
         ]
+    console.log(df_res)
 
     for xi in range(
         n_classification_features
@@ -610,6 +614,7 @@ def make_uplift_classification(
         x_name.append(x_name_i)
         df_res[x_name_i] = np.random.normal(0, 1, n_all)
 
+    console.log(df_res)
     # default treatment effects
     Y = Y1.copy()
     Y_increase = np.zeros_like(Y1)
@@ -655,6 +660,7 @@ def make_uplift_classification(
                         * df_res[np.random.choice(x_uplift_increase_name)]
                     )
 
+    console.log(df_res)
     # generate uplift (negative)
     for treatment_key_i in treatment_name:
         treatment_index = df_res.index[
@@ -698,6 +704,10 @@ def make_uplift_classification(
     # truncate Y
     Y = np.clip(Y, 0, 1)
 
+    console.log(df_res)
     df_res[y_name] = Y
+    console.log(df_res)
     df_res["treatment_effect"] = Y - Y1
+    console.log(df_res)
+    console.log(x_name)
     return df_res, x_name

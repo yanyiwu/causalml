@@ -6,6 +6,9 @@ import seaborn as sns
 from lightgbm import LGBMRegressor
 from ..inference.meta.tmle import TMLELearner
 
+from rich.console import Console
+console = Console()
+
 
 plt.style.use("fivethirtyeight")
 sns.set_palette("Paired")
@@ -93,12 +96,14 @@ def get_cumlift(
         random_col = "__random_{}__".format(i)
         df[random_col] = np.random.rand(df.shape[0])
         random_cols.append(random_col)
+    console.log(df.shape)
 
     model_names = [
         x
         for x in df.columns
         if x not in [outcome_col, treatment_col, treatment_effect_col]
     ]
+    console.log(model_names)
 
     lift = []
     for i, col in enumerate(model_names):
@@ -112,27 +117,48 @@ def get_cumlift(
         else:
             # When treatment_effect_col is not given, use outcome_col and treatment_col
             # to calculate the average treatment_effects of cumulative population.
+            console.log(col)
+            console.log(sorted_df.shape, sorted_df.columns)
             sorted_df["cumsum_tr"] = sorted_df[treatment_col].cumsum()
+            console.log(sorted_df.shape)
             sorted_df["cumsum_ct"] = sorted_df.index.values - sorted_df["cumsum_tr"]
+            console.log(sorted_df.shape)
             sorted_df["cumsum_y_tr"] = (
                 sorted_df[outcome_col] * sorted_df[treatment_col]
             ).cumsum()
+            console.log(sorted_df.shape)
             sorted_df["cumsum_y_ct"] = (
                 sorted_df[outcome_col] * (1 - sorted_df[treatment_col])
             ).cumsum()
+            console.log(sorted_df.shape)
 
-            lift.append(
-                sorted_df["cumsum_y_tr"] / sorted_df["cumsum_tr"]
-                - sorted_df["cumsum_y_ct"] / sorted_df["cumsum_ct"]
-            )
 
+            t = sorted_df["cumsum_y_tr"] / sorted_df["cumsum_tr"] - sorted_df["cumsum_y_ct"] / sorted_df["cumsum_ct"]
+            console.log(t.shape)
+
+            lift.append(t)
+            
+
+    console.log(len(lift))
     lift = pd.concat(lift, join="inner", axis=1)
+    console.log(lift.shape)
+    console.log(lift.head(5))
     lift.loc[0] = np.zeros((lift.shape[1],))
+    console.log(lift.shape)
+    console.log(lift.head(5))
     lift = lift.sort_index().interpolate()
+    console.log(lift.shape)
+    console.log(lift.head(5))
 
     lift.columns = model_names
-    lift[RANDOM_COL] = lift[random_cols].mean(axis=1)
+    console.log(lift.shape)
+    console.log(lift[random_cols].shape)
+    t = lift[random_cols].mean(axis=1)
+    console.log(t.shape)
+    lift[RANDOM_COL] = t 
+    console.log(lift.shape)
     lift.drop(random_cols, axis=1, inplace=True)
+    console.log(lift.shape)
 
     return lift
 
@@ -170,12 +196,15 @@ def get_cumgain(
         (pandas.DataFrame): cumulative gains of model estimates in population
     """
 
+    console.log(df.shape)
     lift = get_cumlift(
         df, outcome_col, treatment_col, treatment_effect_col, random_seed
     )
+    console.log(lift.shape)
 
     # cumulative gain = cumulative lift x (# of population)
     gain = lift.mul(lift.index.values, axis=0)
+    console.log(gain.shape)
 
     if normalize:
         gain = gain.div(np.abs(gain.iloc[-1, :]), axis=1)
@@ -806,11 +835,14 @@ def auuc_score(
         cumgain = get_cumgain(
             df, outcome_col, treatment_col, treatment_effect_col, normalize
         )
+        console.log(cumgain.shape)
     else:
         cumgain = get_tmlegain(
             df, outcome_col=outcome_col, treatment_col=treatment_col, *args, **kwarg
         )
-    return cumgain.sum() / cumgain.shape[0]
+    res = cumgain.sum() / cumgain.shape[0]
+    console.log(res)
+    return res
 
 
 def qini_score(
