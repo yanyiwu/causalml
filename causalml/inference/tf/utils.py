@@ -2,6 +2,8 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.metrics import binary_accuracy
+from rich.console import Console
+console = Console()
 
 
 def binary_classification_loss(concat_true, concat_pred):
@@ -42,6 +44,9 @@ def regression_loss(concat_true, concat_pred):
     y0_pred = concat_pred[:, 0]
     y1_pred = concat_pred[:, 1]
 
+    console.log(t_true)
+    console.log(y_true)
+    console.log(y0_pred)
     loss0 = tf.reduce_sum((1.0 - t_true) * tf.square(y_true - y0_pred))
     loss1 = tf.reduce_sum(t_true * tf.square(y_true - y1_pred))
 

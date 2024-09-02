@@ -15,6 +15,9 @@ the quality of treatment effect estimates. The authors propose two adaptations:
     | https://github.com/claudiashi57/dragonnet
 """
 
+from rich.console import Console
+console = Console()
+
 import numpy as np
 from tensorflow.keras import Input, Model
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, TerminateOnNaN
@@ -159,9 +162,16 @@ class DragonNet:
         """
         X, treatment, y = convert_pd_to_np(X, treatment, y)
 
+        console.log(y.shape)
         y = np.hstack((y.reshape(-1, 1), treatment.reshape(-1, 1)))
 
+        console.log(y.shape)
         self.dragonnet = self.make_dragonnet(X.shape[1])
+        if self.targeted_reg:
+            loss = make_tarreg_loss(ratio=self.ratio, dragonnet_loss=self.loss_func)
+        else:
+            loss = self.loss_func
+
 
         metrics = [
             regression_loss,
@@ -169,11 +179,6 @@ class DragonNet:
             treatment_accuracy,
             track_epsilon,
         ]
-
-        if self.targeted_reg:
-            loss = make_tarreg_loss(ratio=self.ratio, dragonnet_loss=self.loss_func)
-        else:
-            loss = self.loss_func
 
         if self.use_adam:
             self.dragonnet.compile(
@@ -197,6 +202,7 @@ class DragonNet:
                 ),
             ]
 
+            console.log('dragonnet.fit')
             self.dragonnet.fit(
                 X,
                 y,
@@ -229,6 +235,7 @@ class DragonNet:
             loss=loss,
             metrics=metrics,
         )
+        console.log('dragonnet.fit')
         self.dragonnet.fit(
             X,
             y,

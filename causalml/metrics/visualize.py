@@ -208,6 +208,7 @@ def get_cumgain(
 
     if normalize:
         gain = gain.div(np.abs(gain.iloc[-1, :]), axis=1)
+        console.log(gain)
 
     return gain
 
